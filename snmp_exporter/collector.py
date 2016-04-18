@@ -5,9 +5,9 @@ from easysnmp import Session
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 from prometheus_client import Metric, CollectorRegistry, generate_latest, Gauge
 
-def walk_oids(host, port, oids, community):
+def walk_oids(host, port, oids, community, timeout, retries):
 
-  session = Session(hostname=host, remote_port=port, community=community, version=2, use_numeric=True, use_long_names=True)
+  session = Session(hostname=host, remote_port=port, community=community, version=2, use_numeric=True, use_long_names=True, timeout=timeout, retries=retries)
 
   for oid in oids:
       system_items = session.walk(oid)
@@ -60,7 +60,7 @@ def collect_snmp(config, host, port=161):
     prom_type = metric['metric_type'] if 'metric_type' in metric else 'gauge'
     prom_help = metric['metric_help'] if 'metric_help' in metric else 'SNMP OID {0}'.format( metric['oid'] if 'oid' in metric else "NaN" )
     metrics[metric['name']] = Metric(metric['name'], prom_help, prom_type)
-  values = walk_oids(host, port, config['walk'], config.get('community', 'public'))
+  values = walk_oids(host, port, config['walk'], config.get('community', 'public'), config.get('timeout', 5), config.get('retries', 3))
   oids = {}
   for oid, value in values:
     if oid_to_tuple(oid) in oids:
